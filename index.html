@@ -8,8 +8,9 @@
 </head>
 <body>
   <div class="video-player">
+    <input type="file" id="video-upload" accept="video/*" style="display: none;">
+    <label for="video-upload" class="upload-button">Upload Video</label>
     <video id="video" controls>
-      <source id="video-source" src="path-to-video-720p.mp4" type="video/mp4">
       Your browser does not support the video tag.
     </video>
     <div class="controls">
