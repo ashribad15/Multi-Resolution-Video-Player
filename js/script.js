@@ -2,32 +2,32 @@ document.addEventListener("DOMContentLoaded", function() {
   const video = document.getElementById("video");
   const resolutionButton = document.getElementById("resolution-button");
   const videoUpload = document.getElementById("video-upload");
-  const videoPlayerContainer = document.querySelector('.video-player');
 
   const resolutions = [
-    { label: "144p", width: 256, height: 144 },
-    { label: "240p", width: 426, height: 240 },
-    { label: "320p", width: 568, height: 320 },
-    { label: "480p", width: 854, height: 480 },
-    { label: "720p", width: 1280, height: 720 },
-    { label: "1080p", width: 1920, height: 1080 }
+    { label: "144p", path: "path/to/144p/video.mp4" },
+    { label: "240p", path: "path/to/240p/video.mp4" },
+    { label: "320p", path: "path/to/320p/video.mp4" },
+    { label: "480p", path: "path/to/480p/video.mp4" },
+    { label: "720p", path: "path/to/720p/video.mp4" },
+    { label: "1080p", path: "path/to/1080p/video.mp4" }
   ];
 
   let currentResolutionIndex = 4; // Default to 720p
-  let videoFileURL = '';
+  let uploadedVideoFile = null;
 
   videoUpload.addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) {
-      videoFileURL = URL.createObjectURL(file);
-      video.src = videoFileURL;
+      uploadedVideoFile = file;
+      const fileURL = URL.createObjectURL(file);
+      video.src = fileURL;
       video.load();
       video.play();
     }
   });
 
   resolutionButton.addEventListener("click", () => {
-    if (videoFileURL) {
+    if (uploadedVideoFile) {
       changeResolution();
     } else {
       alert("Please upload a video first.");
@@ -37,35 +37,80 @@ document.addEventListener("DOMContentLoaded", function() {
   const changeResolution = () => {
     currentResolutionIndex = (currentResolutionIndex + 1) % resolutions.length;
     const currentTime = video.currentTime;
+    const isPlaying = !video.paused;
 
-    videoPlayerContainer.style.width = resolutions[currentResolutionIndex].width + 'px';
-    videoPlayerContainer.style.height = resolutions[currentResolutionIndex].height + 'px';
+    
+    const selectedResolution = resolutions[currentResolutionIndex];
+    const fileURL = URL.createObjectURL(uploadedVideoFile); 
+    
+    video.src = fileURL; 
     video.currentTime = currentTime;
-    video.play();
-    alert(`Changed to ${resolutions[currentResolutionIndex].label}`);
+    video.load();
+    
+    if (isPlaying) {
+      video.play();
+    }
+    alert(`Changed to ${selectedResolution.label}`);
   };
 
   let touchStartX = 0;
   let touchEndX = 0;
+  let touchStartTime = 0;
+  let touchTimeout;
+  let lastTap = 0;
 
   video.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
+    touchStartTime = new Date().getTime();
+
+    touchTimeout = setTimeout(() => {
+      if (touchStartX < window.innerWidth / 3) {
+        video.playbackRate = 3.0;
+        video.play();
+      } else if (touchStartX > (window.innerWidth / 3) * 2) {
+        video.playbackRate = 2.0;
+        video.play();
+      }
+    }, 500); 
   });
 
   video.addEventListener('touchend', (e) => {
     touchEndX = e.changedTouches[0].screenX;
-    handleGesture();
+    const touchEndTime = new Date().getTime();
+
+    if (touchEndTime - touchStartTime < 500) {
+      clearTimeout(touchTimeout);
+      handleGesture();
+    } else {
+      video.playbackRate = 1.0; 
+    }
+  });
+
+  video.addEventListener('touchend', (e) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    clearTimeout(touchTimeout);
+    if (tapLength < 300 && tapLength > 0) {
+      if (touchEndX < window.innerWidth / 3) {
+        video.currentTime = Math.max(0, video.currentTime - 5); 
+      } else if (touchEndX > (window.innerWidth / 3) * 2) {
+        video.currentTime = Math.min(video.duration, video.currentTime + 10); 
+      } else {
+        video.paused ? video.play() : video.pause();
+      }
+    }
+    lastTap = currentTime;
   });
 
   const handleGesture = () => {
-    if (touchEndX < touchStartX) {
+    const deltaX = touchEndX - touchStartX;
+    if (deltaX > 0) {
+      video.currentTime = Math.min(video.duration, video.currentTime + 10); 
+    } else {
       video.currentTime = Math.max(0, video.currentTime - 10); 
     }
-    if (touchEndX > touchStartX) {
-      video.currentTime = Math.min(video.duration, video.currentTime + 10); 
-    }
   };
-
+  
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' || e.key === 'Esc') {
       window.location.href = '/'; 
