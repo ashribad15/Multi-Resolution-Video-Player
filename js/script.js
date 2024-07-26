@@ -4,23 +4,24 @@ document.addEventListener("DOMContentLoaded", function() {
   const videoUpload = document.getElementById("video-upload");
 
   const resolutions = [
-    { label: "144p", path: "path/to/144p/video.mp4" },
-    { label: "240p", path: "path/to/240p/video.mp4" },
-    { label: "320p", path: "path/to/320p/video.mp4" },
-    { label: "480p", path: "path/to/480p/video.mp4" },
-    { label: "720p", path: "path/to/720p/video.mp4" },
-    { label: "1080p", path: "path/to/1080p/video.mp4" }
+    { label: "144p", scale: 0.25 },
+    { label: "240p", scale: 0.35 },
+    { label: "320p", scale: 0.45 },
+    { label: "480p", scale: 0.6 },
+    { label: "720p", scale: 0.8 },
+    { label: "1080p", scale: 1.0 }
   ];
 
   let currentResolutionIndex = 4; // Default to 720p
   let uploadedVideoFile = null;
+  let originalVideoURL = null;
 
   videoUpload.addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) {
       uploadedVideoFile = file;
-      const fileURL = URL.createObjectURL(file);
-      video.src = fileURL;
+      originalVideoURL = URL.createObjectURL(file);
+      video.src = originalVideoURL;
       video.load();
       video.play();
     }
@@ -39,11 +40,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const currentTime = video.currentTime;
     const isPlaying = !video.paused;
 
-    
+    // Mock resolution change by altering playback speed for demonstration purposes
     const selectedResolution = resolutions[currentResolutionIndex];
-    const fileURL = URL.createObjectURL(uploadedVideoFile); 
-    
-    video.src = fileURL; 
+    video.src = originalVideoURL;
+    video.playbackRate = selectedResolution.scale;
     video.currentTime = currentTime;
     video.load();
     
@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", function() {
     alert(`Changed to ${selectedResolution.label}`);
   };
 
+  // Gesture and keyboard controls 
   let touchStartX = 0;
   let touchEndX = 0;
   let touchStartTime = 0;
@@ -71,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function() {
         video.playbackRate = 2.0;
         video.play();
       }
-    }, 500); 
+    }, 500); // Long press detection threshold
   });
 
   video.addEventListener('touchend', (e) => {
@@ -82,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function() {
       clearTimeout(touchTimeout);
       handleGesture();
     } else {
-      video.playbackRate = 1.0; 
+      video.playbackRate = 1.0; // Reset playback rate after a long press
     }
   });
 
@@ -91,12 +92,13 @@ document.addEventListener("DOMContentLoaded", function() {
     const tapLength = currentTime - lastTap;
     clearTimeout(touchTimeout);
     if (tapLength < 300 && tapLength > 0) {
+      // Double tap detected
       if (touchEndX < window.innerWidth / 3) {
-        video.currentTime = Math.max(0, video.currentTime - 5); 
+        video.currentTime = Math.max(0, video.currentTime - 5); // Double tap left: Rewind 5 seconds
       } else if (touchEndX > (window.innerWidth / 3) * 2) {
-        video.currentTime = Math.min(video.duration, video.currentTime + 10); 
+        video.currentTime = Math.min(video.duration, video.currentTime + 10); // Double tap right: Forward 10 seconds
       } else {
-        video.paused ? video.play() : video.pause();
+        video.paused ? video.play() : video.pause(); // Double tap center: Play/Pause
       }
     }
     lastTap = currentTime;
@@ -105,16 +107,18 @@ document.addEventListener("DOMContentLoaded", function() {
   const handleGesture = () => {
     const deltaX = touchEndX - touchStartX;
     if (deltaX > 0) {
-      video.currentTime = Math.min(video.duration, video.currentTime + 10); 
+      // Swiped right
+      video.currentTime = Math.min(video.duration, video.currentTime + 10); // Forward 10 seconds
     } else {
-      video.currentTime = Math.max(0, video.currentTime - 10); 
+      // Swiped left
+      video.currentTime = Math.max(0, video.currentTime - 10); // Rewind 10 seconds
     }
   };
-  
+
+  // Listen for keydown events to detect the Esc key
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' || e.key === 'Esc') {
-      window.location.href = '/'; 
+      window.location.href = '/';
     }
   });
 });
-
